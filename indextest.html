@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Тесты по информатике</title>
+
+</head>
+<body>
+
+  <!-- Главная страница -->
+  <header>
+    <h1>Тесты по информатике</h1>
+    <p>Онлайн-платформа для изучения и проверки знаний</p>
+
+    <section class="top_nav">
+    <div class="nav_left">
+        <a href="main.html" class="button">Главная</a>
+        <a href="learning.html" class="button">Обучение</a>
+        <a href="statistic.html" class="button" id="statistic" style="display: none;" >Статистика</a>
+        <a href="#" class="button" id="admin" onclick="toggleSection('admin_sec')" style="display: none;">админ</a> 
+    </div>
+    <div class="nav_right">
+        <a href="auth.html" id="auth1" class="button">Вход</a>
+        <a href="auth.html" id="auth2" class="button">Регистрация</a>
+        <a href="#" id="logout-btn" class="button hidden" onclick="logout()">Выйти</a> 
+        <span id="user_name"></span>
+    </div>
+    </section>
+  </header>
+
+  <section class="section" id="topics">
+    <h2>Темы</h2>
+
+    <div class="card">
+      <h3>Основы информатики</h3>
+      <p>Изучите основы и проверьте себя.</p>
+      <button onclick="startTest('test1')" class="button">Пройти тест</button>
+    </div>
+
+    <div class="card">
+      <h3>Алгоритмы</h3>
+      <p>Понимание базовых алгоритмов.</p>
+      <button onclick="startTest('test2')" class="button">Пройти тест</button>
+    </div>
+
+    <div class="card">
+      <h3>Базы данных</h3>
+      <p>Работа с таблицами и SQL.</p>
+      <button onclick="startTest('test3')" class="button">Пройти тест</button>
+    </div>
+
+    <div class="card">
+      <h3>Итоговый тест</h3>
+      <p>Тест, включающий в себя все темы.</p>
+      <button onclick="startTest('test4')" class="button">Пройти тест</button>
+    </div>
+  </section>
+
+  <!-- Панель преподавателя -->
+  <section id="admin_sec"
+  class="section teacher-panel" style="display: none;">
+    <h2>Панель преподавателя</h2>
+    <div class="card">
+      <h3>Создание новой темы</h3>
+      <input type="text" placeholder="Название темы">
+      <button class="button">Создать</button>
+    </div>
+    <div class="card">
+      <h3>Добавление вопросов</h3>
+      <select>
+        <option>Выберите тему</option>
+        <option>Основы информатики</option>
+        <option>Алгоритмы</option>
+      </select><br><br>
+      <textarea rows="4" cols="50" placeholder="Введите вопрос"></textarea><br><br>
+      <input type="text" placeholder="Правильный ответ"><br><br>
+      <button class="button">Добавить вопрос</button>
+    </div>
+  </section>
+
+</body>
+</html>
+
+<script>
+    // админ панель
+    function toggleSection(id) {
+      const section = document.getElementById(id);
+      section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
+    }
+
+    function startTest(testId){
+        window.location.href = `test.html?test=${testId}`;
+    }
+
+    // вывод логина пользователя
+    window.onload = function() {
+        const user = localStorage.getItem('currentUser');
+        const logoutBtn = document.getElementById('logout-btn');
+        if (user){
+            document.getElementById('user_name').textContent = `Привет, ${user}`;
+            logoutBtn.classList.remove('hidden'); // Показываем кнопку выхода
+            document.getElementById('auth1').style.display = 'none';
+            document.getElementById('auth2').style.display = 'none';
+            document.getElementById('statistic').style.display = 'inline-block';
+        }
+            if (user === 'admin') {
+                document.getElementById('admin').style.display = 'inline-block';
+            }
+        // else{
+        //     logoutBtn.classList.add('hidden');
+        // }
+    };
+    function logout(){
+        localStorage.removeItem('currentUser');
+        window.location.href = 'main.html'
+    }
+  </script>
+
+<style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f2f5;
+    }
+    header, .section {
+      padding: 20px;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .top_nav{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        background-color: #599b5b79;
+        border-radius: 10px;
+    }
+    .nav_left, .nav_right{
+        padding: 10px;
+    }
+    .button {
+      padding: 10px 16px;
+      margin: 5px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.068);
+    }
+    .card {
+      background-color: white;
+      padding: 16px;
+      margin: 10px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .teacher-panel {
+      background-color: #fff8dc;
+      border-left: 4px solid #ff9800;
+    }
+    .hidden {
+  display: none;
+}
+  </style>

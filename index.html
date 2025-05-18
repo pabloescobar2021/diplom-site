@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Тесты по информатике</title>
+
+
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script>
+        // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCqY-wYo-Kik3ZiV0fWDLnoTDYMIqQBGY0",
+      authDomain: "diplom-api.firebaseapp.com",
+      databaseURL: "https://diplom-api-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "diplom-api",
+      storageBucket: "diplom-api.firebasestorage.app",
+      messagingSenderId: "869797662835",
+      appId: "1:869797662835:web:398ef9677fec14b0ad1a06"
+    };
+  
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+
+</head>
+<body>
+
+  <!-- Главная страница -->
+  <header>
+    <h1>Тесты по информатике</h1>
+    <p>Онлайн-платформа для изучения и проверки знаний</p>
+
+    <section class="top_nav">
+    <div class="nav_left">
+        <a href="index.html" class="button">Главная</a>
+        <a href="learning.html" class="button">Обучение</a>
+        <a href="statistic.html" class="button" id="statistic" style="display: none;" >Статистика</a>
+        <a href="#" class="button" id="admin" onclick="toggleSection('admin_sec')" style="display: none;">админ</a> 
+
+    </div>
+    <div class="nav_right">
+        <a href="auth.html" id="auth1" class="button">Вход</a>
+        <a href="auth.html" id="auth2" class="button">Регистрация</a>
+        <a href="#" id="logout-btn" class="button hidden" onclick="logout()">Выйти</a> 
+        <span id="user_name"></span>
+    </div>
+    </section>
+  </header>
+
+  <section class="section" id="topics">
+    <h2 style="text-align: center;">Темы</h2>
+    <div class="test_section" id="test_div">
+      <div id="loader" class="loader"></div>
+    </div>
+  </section>
+
+
+
+  <!-- Панель Админа -->
+  <section id="admin_sec" class="section teacher-panel" style="display: none;">
+
+  <h2>Панель преподавателя</h2>
+
+  <div class="card">
+    <h3>Создание новой темы</h3>
+    <input id="test_name" type="text" placeholder="Название темы">
+    <button class="button" onclick="addTest()">Создать</button>
+  </div>
+
+  <div class="card">
+    <h3>Добавление вопросов</h3>
+    <select id="test_select">
+      <option value="">Выберите тему</option>
+      <input type="radio" name="question_type" value="text" checked onchange="toggleAnswerType()">Текстовый вопрос
+      <input type="radio" name="question_type" value="choice" onchange="toggleAnswerType()">Варианты ответа
+    </select><br><br>
+
+    <textarea id="question_text" rows="4" cols="50" placeholder="Введите вопрос"></textarea><br><br>
+
+    <!-- Блок для письменного ответа -->
+    <div id="text_answer_block">
+    <input id="correct_answer" type="text" placeholder="Правильный ответ"><br><br>
+    </div>
+
+    <!-- Блок для вариантов -->
+    <div id="choice_answer_block" style="display: none;">
+    <input type="text" class="choice-option" placeholder="Вариант 1"><br>
+    <input type="text" class="choice-option" placeholder="Вариант 2"><br>
+    <input type="text" class="choice-option" placeholder="Вариант 3"><br>
+    <input type="text" class="choice-option" placeholder="Вариант 4"><br><br>
+    <input id="correct_choice" type="number" placeholder="Номер правильного варианта (0-3)"><br><br>
+    </div>
+
+    <button class="button" onclick="addQuestion()">Добавить вопрос</button>
+  </div>
+</section>
+
+</body>
+</html>
+
+
+<!-- АДМИН ПАНЕЛЬ -->
+<script>
+  const db = firebase.database();
+
+  // Загружаем список тем при открытии панели
+  function loadTopics() {
+    const select = document.getElementById("test_select");
+    select.innerHTML = `<option value="">Выберите тему</option>`;
+
+    db.ref("questions/testNames").once("value").then(snapshot => {
+      const topics = snapshot.val();
+      for (const [testId, name] of Object.entries(topics)) {
+        const option = document.createElement("option");
+        option.value = testId;
+        option.textContent = name;
+        select.appendChild(option);
+      }
+    });
+  }
+
+  // Добавление новой темы
+  function addTest() {
+    const name = document.getElementById("test_name").value.trim();
+    if (!name) {
+      alert("Введите название темы.");
+      return;
+    }
+
+    // Генерируем testId по порядку (например: test4, test5)
+    db.ref("questions/testNames").once("value").then(snapshot => {
+      const existing = snapshot.val() || {};
+      const nextId = "test" + (Object.keys(existing).length + 1);
+      return db.ref(`questions/testNames/${nextId}`).set(name);
+    }).then(() => {
+      alert("Тема добавлена.");
+      document.getElementById("test_name").value = "";
+      loadTopics();
+    }).catch(console.error);
+  }
+
+  // Добавление вопроса к теме
+  function addQuestion() {
+    const testId = document.getElementById("test_select").value;
+    const questionText = document.getElementById("question_text").value.trim();
+    const questionType = document.querySelector('input[name="question_type"]:checked').value;
+
+    if (!testId || !questionText ) {
+      alert("Заполните все поля.");
+      return;
+    }
+
+    let questionObj = {
+      type: questionType,
+      question: questionText
+    };
+
+    if (questionType === 'text'){
+      const answer = document.getElementById("correct_answer").value.trim();
+      if (!answer){
+        alert("Введите правильный ответ.");
+        return;
+      }
+      questionObj.answer = answer;
+    } else if (questionType === 'choice'){
+      const options = Array.from(document.querySelectorAll(".choice-option")).map(el => el.value.trim());
+      const correctIndex = parseInt(document.getElementById("correct_choice").value);
+
+      if (options.some(opt => !opt)){
+        alert("Введите все варианты ответа.");
+        return;
+      }
+      if (isNaN(correctIndex) || correctIndex < 0 || correctIndex >= options.length) {
+      alert("Введите корректный номер правильного варианта (0–3).");
+      return;
+      }
+      questionObj.options = options;
+      questionObj.answer = correctIndex; 
+    }
+    firebase.database().ref(`questions/${testId}`).once('value')
+    .then(snapshot =>{
+      const questions = snapshot.val() || [];
+      questions.push(questionObj);
+      return firebase.database().ref(`questions/${testId}`).set(questions);
+    })
+    .then(() => {
+      alert("Вопрос добавлен.");
+      document.getElementById("question_text").value = "";
+      document.getElementById("correct_answer").value = "";
+      document.querySelectorAll(".choice-option").forEach(input => input.value = "");
+      document.getElementById("correct_choice").value = "";
+    })
+    .catch(console.error);
+  }
+
+  // Показывать панель и подгружать темы
+  function showAdminPanel() {
+    document.getElementById("admin_sec").style.display = "block";
+    loadTopics();
+  }
+
+
+  
+  // Выбор для записи теста(варианты или текст)
+  function toggleAnswerType() {
+    const type = document.querySelector('input[name="question_type"]:checked').value;
+    document.getElementById('text_answer_block').style.display = (type === 'text') ? 'block' : 'none';
+    document.getElementById('choice_answer_block').style.display = (type === 'choice') ? 'block' : 'none';
+  }
+</script>
+
+
+<!-- Загрузка тем -->
+<script>
+  function loadTheme(){
+    const test_div = document.getElementById('test_div');
+    
+
+
+    firebase.database().ref('questions/testNames').once('value')
+    .then((snapshot)=>{
+      if (snapshot.exists()) {
+      test_div.innerHTML = ''; // Очищаем контейнер перед загрузкой тем
+      const data = snapshot.val();
+      for (const [key, value] of Object.entries(data)) {
+        const card = document.createElement('div');
+        card.classList.add('test_card');
+        card.innerHTML = `
+          <h3>${value}</h3>
+          <button onclick="startTest('${key}')" class="button">Пройти тест</button>
+        `;
+        test_div.appendChild(card);
+      }
+      
+
+      console.log("Вопросы из test1:", data);
+      } else{
+        test_div.innerHTML = '<p>Нет доступных тем.</p>';
+      }
+    })
+    .catch((error)=> {
+      console.error("Ошибка при загрузке тем:", error);
+      test_div.innerHTML = '<p>Ошибка при загрузке тем.</p>';
+    });
+  }
+</script>
+
+
+
+<script>
+    // админ панель
+    function toggleSection(id) {
+      const section = document.getElementById(id);
+      section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
+    }
+
+    function startTest(testId){
+        window.location.href = `test.html?test=${testId}`;
+    }
+
+
+    // вывод логина пользователя
+    window.onload = function() {
+        loadTopics();
+        loadTheme(); // Загружаем темы при загрузке страницы
+        const user = localStorage.getItem('currentUser');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        const database = firebase.database();
+        if (user){
+            document.getElementById('user_name').textContent = `Привет, ${user}`;
+            logoutBtn.classList.remove('hidden'); // Показываем кнопку выхода
+            document.getElementById('auth1').style.display = 'none';
+            document.getElementById('auth2').style.display = 'none';
+            document.getElementById('statistic').style.display = 'inline-block';
+
+            
+        }
+            if (user === 'admin') {
+                document.getElementById('admin').style.display = 'inline-block';
+            }
+        // else{
+        //     logoutBtn.classList.add('hidden');
+        // }
+    };
+    function logout(){
+        localStorage.removeItem('currentUser');
+        window.location.href = 'index.html'
+    }
+
+
+    // Initialize Firebase
+    const database = firebase.database();
+  
+    function writeTestData() {
+      const testData = {
+        message: "Привет из Firebase1!",
+        timestamp: new Date().toISOString()
+      };
+  
+      database.ref(`users/${user}/passedTests`).set(testData)
+        .then(() => {
+          alert("✅ Данные успешно записаны!");
+        })
+        .catch((error) => {
+          alert("❌ Ошибка: " + error.message);
+        });
+    }
+    
+  </script>
+
+
+
+
+<style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f2f5;
+    }
+    header, .section {
+      padding: 20px;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .top_nav{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        background-color: #599b5b79;
+        border-radius: 10px;
+    }
+    .nav_left, .nav_right{
+        padding: 10px;
+    }
+    .button {
+      padding: 10px 16px;
+      margin: 5px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.068);
+    }
+    .card {
+      background-color: white;
+      padding: 16px;
+      margin: 10px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .teacher-panel {
+      background-color: #fff8dc;
+      border-left: 4px solid #ff9800;
+    }
+    .hidden {
+  display: none;
+}
+
+.test_section{
+  background-color: #f9f9f9;
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+  justify-content: center;
+  margin: 0 auto;
+  gap: 20px;;
+}
+.test_card{
+  flex: 0 1 30%;
+  padding: 20px;
+  width: 100%;
+  text-align: center;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Loader */
+.loader {
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #42db34;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 50px auto;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+  </style>
