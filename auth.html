@@ -4,11 +4,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Вход и регистрация</title>
-  <style>
-    body { font-family: Arial; margin: 20px; }
-    .hidden { display: none; }
-    input, button { margin: 5px 0; display: block; }
-  </style>
 </head>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -31,19 +26,26 @@
 
 
 <body>
-  <h2>Регистрация</h2>
-  <div id="register-section">
-    <input type="text" id="reg-username" placeholder="Имя пользователя">
-    <input type="password" id="reg-password" placeholder="Пароль">
-    <button onclick="register()">Зарегистрироваться</button>
+  <div class="log_reg_div">
+    <div class="reg_div" id="register-section">
+      <h2>Регистрация</h2>
+      <input type="text" id="reg-username" placeholder="Имя пользователя">
+      <input type="password" id="reg-password" placeholder="Пароль">
+      <button onclick="register()">Зарегистрироваться</button>
+      <button onclick="swapLogReg()">Уже есть в системе?</button>
+    </div>
+
+    
+    <div id="login-section" style="display: none;">
+      <h2>Вход</h2>
+      <input type="text" id="login-username" placeholder="Имя пользователя">
+      <input type="password" id="login-password" placeholder="Пароль">
+      <button onclick="login()">Войти</button>
+      <button onclick="swapLogReg()">Регистрация</button>
+    </div>
   </div>
 
-  <h2>Вход</h2>
-  <div id="login-section">
-    <input type="text" id="login-username" placeholder="Имя пользователя">
-    <input type="password" id="login-password" placeholder="Пароль">
-    <button onclick="login()">Войти</button>
-  </div>
+  
 
   <p id="auth-status"></p>
 
@@ -77,6 +79,7 @@
                 stats: {}
             }).then(() =>{
                 alert('Регистрация успешна')
+                swapLogReg()
             });
         }
       })
@@ -90,12 +93,16 @@
       const admin = 'admin'
       const adminPass = 'admin'
 
+      if (!username || !password) {
+        alert('Введите имя и пароль.');
+        return; }
+
       dbRef.child(username).once('value').then(snapshot =>{
         if (!snapshot.exists()) {
             alert('Пользователь не найден');
             return;
         }
-
+        
         const userData = snapshot.val();
         if (userData.password === password){
             localStorage.setItem('currentUser', username);
@@ -107,6 +114,98 @@
       })
       
     }
+
+    function swapLogReg(){
+      const registerSection = document.getElementById('register-section');
+      const loginSection = document.getElementById('login-section');
+
+      if (registerSection.style.display === 'none') {
+        registerSection.style.display = 'block';
+        loginSection.style.display = 'none';
+      } else {
+        registerSection.style.display = 'none';
+        loginSection.style.display = 'block';
+      }
+    }
   </script>
 </body>
+
+<style>
+  body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: rgba(0, 100, 0, 0.05);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .log_reg_div {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 100, 0, 0.2);
+      padding: 40px 30px;
+      width: 350px;
+      text-align: center;
+    }
+
+    h2 {
+      color: #006400;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #d0e0d0;
+      border-radius: 10px;
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: border 0.3s;
+    }
+
+    input:focus {
+      border-color: #4caf50;
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #4caf50;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-top: 5px;
+    }
+
+    button:hover {
+      background-color: #388e3c;
+    }
+
+    .toggle-auth {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #006400;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    #auth-status {
+      text-align: center;
+      margin-top: 20px;
+      color: #006400;
+    }
+
+    .hidden {
+      display: none;
+    }
+</style>
 </html>
